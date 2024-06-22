@@ -10,14 +10,12 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.myapplication.MyWebSocketClient;
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -41,29 +39,10 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        messageTextView = findViewById(R.id.messageTextView);
-        registBtn = findViewById(R.id.registBtn);
+
         uiHandler = new Handler(Looper.getMainLooper());
-
-        registBtn.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if(clientId != null && clientId != ""){
-                            sendPostRequest("{\"clientId\":\"" + clientId + "\"}");
-                        }
-                    }
-                }
-        );
-
-        try {
-            // Replace "ws://your_server_address" with your actual WebSocket server address
-            webSocketClient = new MyWebSocketClient(this,"wss://warningfire-notice.onrender.com");
-            webSocketClient.connect();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            Log.d(TAG, "connect faild");
-        }
+        SetupUIElements();
+        ConnectWss();
     }
     @Override
     protected void onDestroy() {
@@ -84,7 +63,7 @@ public class MainActivity extends AppCompatActivity
         // Handle WebSocket message received event
         Log.d(TAG, "WebSocket message received: " + message);
 
-        runOnUiThread(() -> HandleMessageReceived(message));
+        HandleMessageReceived(message);
     }
 
     @Override
@@ -104,13 +83,13 @@ public class MainActivity extends AppCompatActivity
         InfoReceive infoReceive = gson.fromJson(message, InfoReceive.class);
 
         if(infoReceive == null){
-            messageTextView.setText("Messsage is null or empty");
+            runOnUiThread(() -> messageTextView.setText("Messsage is null or empty"));
             return;
         }
 
         if(infoReceive.Type == InfoReceive.MessageType.MESSAGE)
         {
-            messageTextView.setText("message: " + infoReceive.Message);
+            runOnUiThread(() -> messageTextView.setText("message: " + infoReceive.Message));
 
             String newClientId = infoReceive.ClientId;
             if(newClientId != null && newClientId != ""){
@@ -118,15 +97,15 @@ public class MainActivity extends AppCompatActivity
             }
         }
         else if(infoReceive.Type == InfoReceive.MessageType.WARNING){
-            messageTextView.setText("Warning: " + infoReceive.Message);
+            runOnUiThread(() -> messageTextView.setText("Warning: " + infoReceive.Message));
         }
     }
 
-    private void sendPostRequest(String jsonBody) {
+    private void SendRegistRequest(String jsonBody) {
         OkHttpClient client = new OkHttpClient();
 
         // URL of the API endpoint
-        String url = "https://warningfire-notice.onrender.com/register";
+        String url = ConfigVariable.apiRegist;
 
         // Create the JSON object to send in the request body
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
@@ -151,12 +130,40 @@ public class MainActivity extends AppCompatActivity
                 if (response.isSuccessful()) {
                     String body = response.body().string();
                     Log.d(TAG, "Post request successful: " + body);
-                    runOnUiThread(() -> HandleMessageReceived(body));
+                    HandleMessageReceived(body);
                 } else {
                     Log.e(TAG, "Post request failed: " + response.code());
                     runOnUiThread(() -> messageTextView.setText("Regist failed!"));
                 }
             }
         });
+    }
+
+    private  void ConnectWss(){
+        try {
+            // Replace "ws://your_server_address" with your actual WebSocket server address
+            webSocketClient = new MyWebSocketClient(this, ConfigVariable.wssAddress);
+            webSocketClient.connect();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            Log.d(TAG, "connect faild");
+        }
+    }
+
+    private void SetupUIElements(){
+        messageTextView = findViewById(R.id.messageTextView);
+
+        // button regist
+        registBtn = findViewById(R.id.registBtn);
+        registBtn.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(clientId != null && clientId != ""){
+                            SendRegistRequest("{\"clientId\":\"" + clientId + "\"}");
+                        }
+                    }
+                }
+        );
     }
 }
