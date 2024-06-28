@@ -44,6 +44,7 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity implements MyWebSocketClient.WebSocketListener {
     private MyWebSocketClient webSocketClient;
     private TextView messageTextView;
+    private TextView clientTextView;
     private Handler uiHandler;
     private String clientId;
     private ActivityMainBinding binding;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements MyWebSocketClient
         setContentView(binding.getRoot());
         uiHandler = new Handler(Looper.getMainLooper());
         SetupUIElements();
-        ConnectWss();
+        //ConnectWss();
     }
 
     @Override
@@ -100,13 +101,19 @@ public class MainActivity extends AppCompatActivity implements MyWebSocketClient
             return;
         }
         if (infoReceive.Type == InfoReceive.MessageType.MESSAGE) {
-            runOnUiThread(() -> messageTextView.setText("message: " + infoReceive.Message));
+            runOnUiThread(() -> messageTextView.setText("message: \n" + infoReceive.Message));
+
             String newClientId = infoReceive.ClientId;
             if (newClientId != null && newClientId != "") {
                 this.clientId = newClientId;
+                runOnUiThread(() -> clientTextView.setText("Client ID: " + newClientId));
+                SendRegistRequest("{\"clientId\":\"" + clientId + "\"}");
             }
         } else if (infoReceive.Type == InfoReceive.MessageType.WARNING) {
-            runOnUiThread(() -> messageTextView.setText("Warning: " + infoReceive.Message));
+            //runOnUiThread(() -> messageTextView.setText("Warning: \n" + infoReceive.Message));
+            runOnUiThread(() -> {
+                showFireWarningPopup();
+            });
         }
     }
 
@@ -154,20 +161,22 @@ public class MainActivity extends AppCompatActivity implements MyWebSocketClient
 
     private void SetupUIElements() {
         messageTextView = binding.messageTextView;
+        clientTextView = binding.txtId;
         // button regist
         binding.registBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //                        if (clientId != null && clientId != "") { //
-                //                        SendRegistRequest("{\"clientId\"😕"" + clientId + "\"}"); //
-                //                        }
-                createAndShowNotification(getResources().getString(R.string.signs_of_fire_were_detected_check_now));
+                                            if (clientId != null && clientId != "") { //
+                                            SendRegistRequest("{\"clientId\":\"" + clientId + "\"}"); //
+                                            }
+                //createAndShowNotification(getResources().getString(R.string.signs_of_fire_were_detected_check_now));
             }
         });
         binding.btnReload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showFireWarningPopup();
+                //showFireWarningPopup();
+                ConnectWss();
             }
         });
     }
