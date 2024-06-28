@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string name="content_description">Content description</string>
+    <string name="messages_will_appear_here">Message will be here</string>
+    <string name="client_socket_id">Client socket id</string>
+    <string name="reload">Reload</string>
+    <string name="register">Register</string>
+    <string name="warning">Warning!!</string>
+    <string name="signs_of_fire_were_detected_check_now">Signs of fire were detected. Check now</string>
+    <string name="confirm">Confirm</string>
 </resources>
